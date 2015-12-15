@@ -75,6 +75,8 @@ window.onload = function () {
 					state.progress.map(function (dist) {
 						dist.remove()
 					});
+					cancelAnimationFrame(state.animationRequest);
+					
 					state.initialCoords = getParameters(this);		
 					state.initial = normalDistribution(state.initialCoords[0], state.initialCoords[1], state.initial);
 				})
@@ -127,7 +129,7 @@ window.onload = function () {
 					var ticks = d3.range(1, tickCount).map(function (i) { return i * duration / tickCount; });
 					var now = performance.now();
 					state.progress = [];
-					requestAnimationFrame(function animate(time) {
+					state.animationRequest = requestAnimationFrame(function animate(time) {
 						time -= now;
 						state.animation = normalDistribution(-R * tanh(tau(time)) + c, R * sech(tau(time)), state.animation);						
 					
@@ -142,7 +144,7 @@ window.onload = function () {
 							state.progress.push(dist);
 						}
 						if (time < tau.domain()[1])
-							requestAnimationFrame(animate);
+							state.animationRequest = requestAnimationFrame(animate);
 						else
 							state.animation.remove();
 					});
