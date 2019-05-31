@@ -94,6 +94,8 @@ window.onload = function () {
 
 					state.initialCoords = getParameters(this);		
 					state.initial = normalDistribution(state.initialCoords[0], state.initialCoords[1], state.initial);
+
+					d3.event.preventDefault();
 				})
 				.on('drag', function () {
 					var coords = state.endCoords = getParameters(this);
@@ -133,6 +135,8 @@ window.onload = function () {
 							'stroke-width': '2px'
 						});
 					state.end = normalDistribution(coords[0], coords[1], state.end);
+
+					d3.event.preventDefault();
 				})
 				.on('dragend', function () {
 					if (!state.endCoords)
@@ -175,6 +179,8 @@ window.onload = function () {
 						else
 							state.animation.remove();
 					});
+					
+					d3.event.preventDefault();
 				})
 		)
 	/*
