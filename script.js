@@ -62,12 +62,14 @@ window.onload = function () {
 	
 	function getParameters(event) {
 		var coords = d3.mouse(event);
-		return [muScale.invert(coords[0]), sigmaScale.invert(coords[1])];
+		return [muScale.invert(coords[0]), Math.max(sigmaScale.invert(coords[1]), 0)];
 	}
 	
 	var state = {
-		progress: []
+		progress: [],
+		endCoords: null
 	};
+	state.initial = normalDistribution(0, Math.sqrt(2), state.initial);
 	svg
 		.call(
 			d3.behavior.drag()
@@ -75,15 +77,32 @@ window.onload = function () {
 					state.progress.map(function (dist) {
 						dist.remove()
 					});
-					cancelAnimationFrame(state.animationRequest);
+					state.progress = [];
 					
+					if (state.geodesicArc) {
+						state.geodesicArc.remove();
+						state.geodesicFull.remove();
+					}
+
+					if (state.end)
+						state.end.remove();
+					state.endCoords = null;
+
+					cancelAnimationFrame(state.animationRequest);
+					if (state.animation)
+						state.animation.remove();
+
 					state.initialCoords = getParameters(this);		
 					state.initial = normalDistribution(state.initialCoords[0], state.initialCoords[1], state.initial);
 				})
 				.on('drag', function () {
 					var coords = state.endCoords = getParameters(this);
 					var geodesic = getGeodesic(state.initialCoords, coords);
-					
+
+					// TODO: Handle case where line is straight up.
+					if (geodesic[1] == Infinity)
+						return;
+
 					if (state.geodesicArc) {
 						state.geodesicArc.remove();
 						state.geodesicFull.remove();
@@ -116,11 +135,18 @@ window.onload = function () {
 					state.end = normalDistribution(coords[0], coords[1], state.end);
 				})
 				.on('dragend', function () {
+					if (!state.endCoords)
+						return;
+
 					var geodesic = getGeodesic(state.initialCoords, state.endCoords);
 					var c = geodesic[0];
 					var R = geodesic[1];
 					var tau0 = arctanh((state.initialCoords[0] - c) / -R);
 					var tau1 = arctanh((state.endCoords[0] - c) / -R);
+
+					// TODO: Handle case where line is straight up.
+					if (R == Infinity)
+						return;
 					
 					var duration = Math.abs(tau1 - tau0) * 1000;
 					var tau = d3.scale.linear().domain([0, duration]).range([tau0, tau1])
@@ -131,10 +157,11 @@ window.onload = function () {
 					state.progress = [];
 					state.animationRequest = requestAnimationFrame(function animate(time) {
 						time -= now;
+
 						state.animation = normalDistribution(-R * tanh(tau(time)) + c, R * sech(tau(time)), state.animation);						
 					
 						state.progress.forEach(function (dist) {
-							dist.select('path').style('opacity', 0.5 * Math.exp(-(time - dist.tick) / (tickCount * 300)));
+							dist.select('path').style('opacity', 0.5 * Math.exp(-(time - dist.tick) / (tickCount * 200)));
 						});
 						
 						if (ticks.length && time > ticks[0]) {
@@ -192,6 +219,11 @@ window.onload = function () {
 		
 		var color = 'hsl(' + (150 + Math.atan2(sigma, mu) * 180 / Math.PI) + ', 100%, 63%)';
 		var group = svg.append('g');
+		
+		var coords = d3.range(domain[0] - 0.1, domain[1] + 0.1, 0.05);
+		coords = coords.concat(d3.range(0.05, 1, 0.1).map(function (x) { return inverseNormalCDF(mu, sigma, x); }));
+		coords.sort(function (a, b) { return a - b; });
+
 		group
 			.append('g')
 			.attr('transform', 'translate(0, ' + height + ')')
@@ -199,7 +231,8 @@ window.onload = function () {
 			.attr('transform', 'scale(1, -1)')
 			.append('path')
 			.attr({
-				'd': line(d3.range(domain[0], domain[1] + 0.1, 0.05)),
+				//'d': line(d3.range(domain[0], domain[1] + 0.1, 0.05)),
+				'd': line(coords),
 				'stroke-width': '2px',
 				'stroke': color,
 				'fill': 'none'
@@ -224,6 +257,42 @@ window.onload = function () {
 		var y = Math.exp(-(x - mu) * (x - mu) / (sigma * sigma)) / (Math.sqrt(Math.PI) * sigma);
 		return y > 1E-7 ? y : 0;
 	}
+
+	function inverseNormalCDF(mu, sigma, x) {
+		return sigma * inverseStandardNormalCDF(x) + mu;
+	}
+
+	function inverseStandardNormalCDF(p) {
+		// https://stackoverflow.com/questions/8816729/javascript-equivalent-for-inverse-normal-function-eg-excels-normsinv-or-nor
+		var a1 = -39.6968302866538, a2 = 220.946098424521, a3 = -275.928510446969;
+		var a4 = 138.357751867269, a5 = -30.6647980661472, a6 = 2.50662827745924;
+		var b1 = -54.4760987982241, b2 = 161.585836858041, b3 = -155.698979859887;
+		var b4 = 66.8013118877197, b5 = -13.2806815528857, c1 = -7.78489400243029E-03;
+		var c2 = -0.322396458041136, c3 = -2.40075827716184, c4 = -2.54973253934373;
+		var c5 = 4.37466414146497, c6 = 2.93816398269878, d1 = 7.78469570904146E-03;
+		var d2 = 0.32246712907004, d3 = 2.445134137143, d4 = 3.75440866190742;
+		var p_low = 0.02425, p_high = 1 - p_low;
+	
+		if (p <= 0)
+			return -Infinity;
+		if (p >= 1)
+			return Infinity;
+
+		if (p < p_low) {
+			var q = Math.sqrt(-2 * Math.log(p));
+			return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+		}
+		
+		if (p <= p_high)
+		{
+			var q = p - 0.5;
+			var r = q * q;
+			return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q / (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+		}
+		
+		var q = Math.sqrt(-2 * Math.log(1 - p));
+		return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+	}
 	
 	function tanh(t) {
 		if (t >= 0)
@@ -238,4 +307,8 @@ window.onload = function () {
 	function arctanh(x) {
 		return (Math.log(1 + x) - Math.log(1 - x)) / 2;
 	}
+};
+
+window.onresize = function () {
+	window.location.reload();
 };
