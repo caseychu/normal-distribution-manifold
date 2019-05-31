@@ -179,7 +179,7 @@ window.onload = function () {
 						else
 							state.animation.remove();
 					});
-					
+
 					d3.event.preventDefault();
 				})
 		)
@@ -315,6 +315,13 @@ window.onload = function () {
 	}
 };
 
-window.onresize = function () {
+window.onresize = window.onorientationchange = function () {
 	window.location.reload();
 };
+
+window.addEventListener('touchmove', ev => {
+  if (weShouldStopDefaultScrollAndZoom) {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+  };
+}, { passive: false });
