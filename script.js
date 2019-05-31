@@ -315,7 +315,7 @@ window.onload = function () {
 	}
 };
 
-window.addEventListener('touchmove', function (e) {
+document.ontouchmove = function (e) {
 	e.preventDefault();
 	e.stopImmediatePropagation();
-}, { passive: false });
+};
