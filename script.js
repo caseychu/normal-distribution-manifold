@@ -315,13 +315,7 @@ window.onload = function () {
 	}
 };
 
-window.onresize = window.onorientationchange = function () {
-	window.location.reload();
-};
-
-window.addEventListener('touchmove', ev => {
-  if (weShouldStopDefaultScrollAndZoom) {
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-  };
+window.addEventListener('touchmove', function (e) {
+	e.preventDefault();
+	e.stopImmediatePropagation();
 }, { passive: false });
