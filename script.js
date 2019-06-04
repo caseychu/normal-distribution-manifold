@@ -314,9 +314,12 @@ window.onload = function () {
 		return (Math.log(1 + x) - Math.log(1 - x)) / 2;
 	}
 
-	window.onresize = window.onorientationchange = function (e) {
+	window.addEventListener('resize', function (e) {
 		window.location.reload();
-	};
+	});
+	window.addEventListener('orientationchange', function (e) {
+		window.location.reload();
+	});
 };
 
 document.body.addEventListener('touchmove', function (e) {
