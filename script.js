@@ -95,7 +95,7 @@ window.onload = function () {
 					state.initialCoords = getParameters(this);		
 					state.initial = normalDistribution(state.initialCoords[0], state.initialCoords[1], state.initial);
 
-					d3.event.preventDefault();
+					d3.event.sourceEvent.preventDefault();
 				})
 				.on('drag', function () {
 					var coords = state.endCoords = getParameters(this);
@@ -136,7 +136,7 @@ window.onload = function () {
 						});
 					state.end = normalDistribution(coords[0], coords[1], state.end);
 
-					d3.event.preventDefault();
+					d3.event.sourceEvent.preventDefault();
 				})
 				.on('dragend', function () {
 					if (!state.endCoords)
@@ -180,7 +180,7 @@ window.onload = function () {
 							state.animation.remove();
 					});
 
-					d3.event.preventDefault();
+					d3.event.sourceEvent.preventDefault();
 				})
 		)
 	/*
@@ -313,13 +313,15 @@ window.onload = function () {
 	function arctanh(x) {
 		return (Math.log(1 + x) - Math.log(1 - x)) / 2;
 	}
+	function reloadIfSizeChanged() {
+		var newWidth = parseInt(getComputedStyle(document.querySelector('svg')).width);
+		var newHeight = parseInt(getComputedStyle(document.querySelector('svg')).height);
+		if (newWidth != svg.width || newHeight != svg.height) 
+			window.location.reload();
+	}
 
-	window.addEventListener('resize', function (e) {
-		window.location.reload();
-	});
-	window.addEventListener('orientationchange', function (e) {
-		window.location.reload();
-	});
+	window.addEventListener('resize', reloadIfSizeChanged);
+	window.addEventListener('orientationchange', reloadIfSizeChanged);
 };
 
 document.body.addEventListener('touchmove', function (e) {
