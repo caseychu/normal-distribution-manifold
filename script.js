@@ -313,15 +313,6 @@ window.onload = function () {
 	function arctanh(x) {
 		return (Math.log(1 + x) - Math.log(1 - x)) / 2;
 	}
-	function reloadIfSizeChanged() {
-		var newWidth = parseInt(getComputedStyle(document.querySelector('svg')).width);
-		var newHeight = parseInt(getComputedStyle(document.querySelector('svg')).height);
-		if (newWidth != svg.width || newHeight != svg.height) 
-			window.location.reload();
-	}
-
-	window.addEventListener('resize', reloadIfSizeChanged);
-	window.addEventListener('orientationchange', reloadIfSizeChanged);
 };
 
 document.body.addEventListener('touchmove', function (e) {
