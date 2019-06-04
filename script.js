@@ -313,6 +313,10 @@ window.onload = function () {
 	function arctanh(x) {
 		return (Math.log(1 + x) - Math.log(1 - x)) / 2;
 	}
+
+	window.onresize = window.orientationchange = function (e) {
+		window.location.reload();
+	};
 };
 
 document.body.addEventListener('touchmove', function (e) {
